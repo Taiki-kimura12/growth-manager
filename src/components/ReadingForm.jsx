@@ -1,0 +1,173 @@
+import React, { useState, useEffect } from 'react';
+import useReadingStore from '../store/readingStore';
+
+const ReadingForm = ({ onClose, onSuccess, editReading = null }) => {
+  const addReading = useReadingStore((state) => state.addReading);
+  const updateReading = useReadingStore((state) => state.updateReading);
+  
+  const [formData, setFormData] = useState({
+    bookTitle: '',
+    date: new Date().toISOString().split('T')[0],
+    learning: '',
+    tags: []
+  });
+  
+  const [tagInput, setTagInput] = useState('');
+
+  // 編集モードの場合、初期値を設定
+  useEffect(() => {
+    if (editReading) {
+      setFormData({
+        bookTitle: editReading.bookTitle,
+        date: editReading.date,
+        learning: editReading.learning,
+        tags: editReading.tags || []
+      });
+    }
+  }, [editReading]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    if (!formData.bookTitle.trim() || !formData.learning.trim()) {
+      alert('本のタイトルと学びを入力してください');
+      return;
+    }
+
+    if (editReading) {
+      // 編集モード
+      updateReading(editReading.id, formData);
+    } else {
+      // 新規作成モード
+      addReading(formData);
+    }
+
+    onSuccess?.();
+    onClose();
+  };
+
+  const addTag = () => {
+    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
+      setFormData({
+        ...formData,
+        tags: [...formData.tags, tagInput.trim()]
+      });
+      setTagInput('');
+    }
+  };
+
+  const removeTag = (tagToRemove) => {
+    setFormData({
+      ...formData,
+      tags: formData.tags.filter(tag => tag !== tagToRemove)
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* 本のタイトル */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          本のタイトル
+        </label>
+        <input
+          type="text"
+          value={formData.bookTitle}
+          onChange={(e) => setFormData({ ...formData, bookTitle: e.target.value })}
+          className="w-full px-3 py-2 border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="読んだ本のタイトル..."
+          required
+        />
+      </div>
+
+      {/* 日付 */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          日付
+        </label>
+        <input
+          type="date"
+          value={formData.date}
+          onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+          className="w-full px-3 py-2 border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          required
+        />
+      </div>
+
+      {/* 学び */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          学んだこと
+        </label>
+        <textarea
+          value={formData.learning}
+          onChange={(e) => setFormData({ ...formData, learning: e.target.value })}
+          className="w-full px-3 py-2 border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          rows="6"
+          placeholder="この本から学んだことや気づき..."
+          required
+        />
+      </div>
+
+      {/* タグ */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          タグ
+        </label>
+        <div className="flex gap-2 mb-2">
+          <input
+            type="text"
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+            className="flex-1 px-3 py-2 border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="タグを入力してEnter"
+          />
+          <button
+            type="button"
+            onClick={addTag}
+            className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200"
+          >
+            追加
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {formData.tags.map((tag, idx) => (
+            <span
+              key={idx}
+              className="px-3 py-1 bg-gray-100 text-gray-700 text-sm flex items-center gap-2"
+            >
+              {tag}
+              <button
+                type="button"
+                onClick={() => removeTag(tag)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* ボタン */}
+      <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
+        <button
+          type="button"
+          onClick={onClose}
+          className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+        >
+          キャンセル
+        </button>
+        <button
+          type="submit"
+          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium hover:bg-blue-700"
+        >
+          {editReading ? '更新' : '保存'}
+        </button>
+      </div>
+    </form>
+  );
+};
+
+export default ReadingForm;
